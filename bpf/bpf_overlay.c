@@ -169,16 +169,16 @@ static __always_inline int handle_ipv4(struct __ctx_buff *ctx, __u32 *identity)
 	/* verifier workaround (dereference of modified ctx ptr) */
 	if (!revalidate_data_pull(ctx, &data, &data_end, &ip4))
 		return DROP_INVALID;
-#ifdef ENABLE_NODEPORT
-	if (!bpf_skip_nodeport(ctx)) {
-		int ret = nodeport_lb4(ctx, *identity);
-
-		if (ret < 0)
-			return ret;
-	}
-#endif
-	if (!revalidate_data(ctx, &data, &data_end, &ip4))
-		return DROP_INVALID;
+//#ifdef ENABLE_NODEPORT
+//	if (!bpf_skip_nodeport(ctx)) {
+//		int ret = nodeport_lb4(ctx, *identity);
+//
+//		if (ret < 0)
+//			return ret;
+//	}
+//#endif
+//	if (!revalidate_data(ctx, &data, &data_end, &ip4))
+//		return DROP_INVALID;
 
 	decrypted = ((ctx->mark & MARK_MAGIC_HOST_MASK) == MARK_MAGIC_DECRYPT);
 	/* If packets are decrypted the key has already been pushed into metadata. */
@@ -220,6 +220,17 @@ static __always_inline int handle_ipv4(struct __ctx_buff *ctx, __u32 *identity)
 	ctx->mark = 0;
 not_esp:
 #endif
+
+#ifdef ENABLE_NODEPORT
+	if (!bpf_skip_nodeport(ctx)) {
+		int ret = nodeport_lb4(ctx, *identity);
+
+		if (ret < 0)
+			return ret;
+	}
+#endif
+	if (!revalidate_data(ctx, &data, &data_end, &ip4))
+		return DROP_INVALID;
 
 	/* Lookup IPv4 address in list of local endpoints */
 	ep = lookup_ip4_endpoint(ip4);
@@ -349,7 +360,8 @@ int to_overlay(struct __ctx_buff *ctx)
 #endif
 
 #ifdef ENABLE_NODEPORT
-	if ((ctx->mark & MARK_MAGIC_SNAT_DONE) == MARK_MAGIC_SNAT_DONE) {
+	//if ((ctx->mark & MARK_MAGIC_SNAT_DONE) == MARK_MAGIC_SNAT_DONE) {
+	if (bpf_is_snat_done()) {
 		ret = CTX_ACT_OK;
 		goto out;
 	}

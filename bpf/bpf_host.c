@@ -789,10 +789,11 @@ do_netdev(struct __ctx_buff *ctx, __u16 proto, const bool from_host)
 		if (magic == MARK_MAGIC_ENCRYPT)
 			return do_netdev_encrypt(ctx, proto);
 	} else {
-		int done = do_decrypt(ctx, proto);
+		do_decrypt(ctx, proto);
+		//int done = do_decrypt(ctx, proto);
 
-		if (!done)
-			return CTX_ACT_OK;
+		//if (!done)
+		//	return CTX_ACT_OK;
 	}
 #endif
 	bpf_clear_meta(ctx);
@@ -1019,7 +1020,8 @@ out:
 	(!defined(ENABLE_DSR) || \
 	 (defined(ENABLE_DSR) && defined(ENABLE_DSR_HYBRID)) || \
 	 defined(ENABLE_MASQUERADE))
-	if ((ctx->mark & MARK_MAGIC_SNAT_DONE) != MARK_MAGIC_SNAT_DONE) {
+	//if ((ctx->mark & MARK_MAGIC_SNAT_DONE) != MARK_MAGIC_SNAT_DONE) {
+	if (!bpf_is_snat_done()) {
 		ret = nodeport_nat_fwd(ctx);
 		if (IS_ERR(ret))
 			return send_drop_notify_error(ctx, 0, ret,
